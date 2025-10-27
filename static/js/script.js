@@ -58,7 +58,6 @@ function displayCars(cars) {
         `;
         tableBody.appendChild(row);
     });
-    // Apply current filter after rendering
     if (currentFilter) filterTable(currentFilter);
 }
 
@@ -99,6 +98,7 @@ window.deleteCar = function(id) {
     }
 }
 
+// funcion para resetear el formulario
 function resetForm() {
     document.getElementById('carForm').reset();
     editingCarId = null;
@@ -154,12 +154,11 @@ document.getElementById('carForm').addEventListener('submit', async (e) => {
     }
 });
 
-// Función para exportar a PDF con formato ejecutivo
+// Función para exportar a PDF con formato "ejecutivo"
 window.exportToPDF = async function() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-    // Configuración de la empresa
     const companyInfo = {
         name: "NOMBRE DE LA EMPRESA",
         address: "Av. Principal #123",
@@ -169,20 +168,17 @@ window.exportToPDF = async function() {
         rfc: "ABCD123456ABC"
     };
 
-    // Cargar y agregar el logo
     try {
         const img = new Image();
         img.src = '/static/img/logo.svg';
         await new Promise((resolve, reject) => {
             img.onload = () => {
-                // Convertir SVG a canvas
                 const canvas = document.createElement('canvas');
                 canvas.width = 40;
                 canvas.height = 40;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, 40, 40);
                 
-                // Agregar imagen al PDF
                 doc.addImage(canvas.toDataURL(), 'PNG', 85, 10, 40, 40);
                 resolve();
             };
@@ -192,12 +188,10 @@ window.exportToPDF = async function() {
         console.error('Error loading logo:', error);
     }
 
-    // Configurar estilos
     doc.setFontSize(20);
     doc.setTextColor(44, 62, 80);
     doc.text(companyInfo.name, 105, 60, { align: "center" });
 
-    // Información de la empresa
     doc.setFontSize(10);
     doc.setTextColor(52, 73, 94);
     doc.text([
@@ -208,11 +202,10 @@ window.exportToPDF = async function() {
         `RFC: ${companyInfo.rfc}`
     ], 105, 70, { align: "center" });
 
-    // Título del reporte
+    
     doc.setFontSize(16);
     doc.setTextColor(44, 62, 80);
-    doc.text("Registro de Automóviles", 105, 90, { align: "center" });
-
+    doc.text("Registro de Automóviles", 105, 90, { align: "center" });// Título del reporte
     // Fecha del reporte
     const today = new Date().toLocaleDateString('es-MX', { 
         year: 'numeric', 
@@ -224,7 +217,7 @@ window.exportToPDF = async function() {
 
     // Obtener datos de la tabla
     const tableBody = [];
-    const table = document.getElementById('carsTableBody');
+    const table = document.getElementById('carsTableBody'); //utilizamos el id de la tabla
     const rows = table.getElementsByTagName('tr');
     
     for (const row of rows) {
@@ -285,7 +278,6 @@ window.exportToPDF = async function() {
     doc.save('Registro_Automoviles.pdf');
 }
 
-// wire search input (live filtering) and initial load
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {

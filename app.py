@@ -1,3 +1,10 @@
+"""
+Creado por: Omar I. Azar
+Fecha de creación: 2028-10-24
+Descripción: Aplicacion para el registro y gestión de automóviles utilizando Flask y MongoDB.
+"""
+
+
 import os
 import os
 from flask import Flask, render_template, request, jsonify
