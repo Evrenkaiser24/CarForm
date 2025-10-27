@@ -37,6 +37,7 @@ async function loadCars() {
     }
 }
 
+// funcion para mostrar los autos en la tabla
 function displayCars(cars) {
     const tableBody = document.getElementById('carsTableBody');
     tableBody.innerHTML = '';
@@ -152,6 +153,118 @@ document.getElementById('carForm').addEventListener('submit', async (e) => {
         console.error('Error:', error);
     }
 });
+
+// Función para exportar a PDF con formato ejecutivo
+window.exportToPDF = function() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Configuración de la empresa
+    const companyInfo = {
+        name: "COBIMSA",
+        address: "Av. Principal #123",
+        city: "Ciudad de México",
+        phone: "(55) 1234-5678",
+        email: "contacto@cobimsa.com",
+        rfc: "COBI123456ABC",
+        logo: null // Aquí podrías agregar un logo si lo tienes
+    };
+
+    // Configurar estilos
+    doc.setFontSize(20);
+    doc.setTextColor(44, 62, 80);
+    doc.text(companyInfo.name, 105, 20, { align: "center" });
+
+    // Información de la empresa
+    doc.setFontSize(10);
+    doc.setTextColor(52, 73, 94);
+    doc.text([
+        `Dirección: ${companyInfo.address}`,
+        `${companyInfo.city}`,
+        `Tel: ${companyInfo.phone}`,
+        `Email: ${companyInfo.email}`,
+        `RFC: ${companyInfo.rfc}`
+    ], 105, 30, { align: "center" });
+
+    // Título del reporte
+    doc.setFontSize(16);
+    doc.setTextColor(44, 62, 80);
+    doc.text("Registro de Automóviles", 105, 60, { align: "center" });
+
+    // Fecha del reporte
+    const today = new Date().toLocaleDateString('es-MX', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+    doc.setFontSize(10);
+    doc.text(`Fecha del reporte: ${today}`, 105, 70, { align: "center" });
+
+    // Obtener datos de la tabla
+    const tableBody = [];
+    const table = document.getElementById('carsTableBody');
+    const rows = table.getElementsByTagName('tr');
+    
+    for (const row of rows) {
+        if (row.style.display !== 'none') { // Solo incluir filas visibles (si hay filtro)
+            const cells = row.getElementsByTagName('td');
+            tableBody.push([
+                cells[0].textContent, // Marca
+                cells[1].textContent, // Modelo
+                cells[2].textContent, // Año
+                cells[3].textContent, // Color
+                cells[4].textContent, // Costo
+                cells[5].textContent, // Motor
+                cells[6].textContent  // Puertas
+            ]);
+        }
+    }
+
+    // Generar tabla
+    doc.autoTable({
+        startY: 80,
+        head: [['Marca', 'Modelo', 'Año', 'Color', 'Costo', 'Motor', 'Puertas']],
+        body: tableBody,
+        theme: 'grid',
+        styles: {
+            fontSize: 8,
+            cellPadding: 3,
+            lineColor: [44, 62, 80],
+            lineWidth: 0.1
+        },
+        headStyles: {
+            fillColor: [44, 62, 80],
+            textColor: [255, 255, 255],
+            fontSize: 9,
+            fontStyle: 'bold'
+        },
+        alternateRowStyles: {
+            fillColor: [240, 240, 240]
+        }
+    });
+
+    // Pie de página
+    const pageCount = doc.internal.getNumberOfPages();
+    doc.setFontSize(8);
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.text(
+            `Página ${i} de ${pageCount}`,
+            doc.internal.pageSize.width / 2,
+            doc.internal.pageSize.height - 10,
+            { align: "center" }
+        );
+        doc.text(
+            `${companyInfo.name} - Documento generado el ${today}`,
+            doc.internal.pageSize.width / 2,
+            doc.internal.pageSize.height - 5,
+            { align: "center" }
+        );
+    }
+
+    // Guardar el PDF
+    doc.save('Registro_Automoviles_COBIMSA.pdf');
+}
 
 // wire search input (live filtering) and initial load
 document.addEventListener('DOMContentLoaded', () => {
