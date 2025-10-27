@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: car-registration
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: MONGO_URI
+        sync: false
+      - key: MONGO_DB
+        value: car_registry
