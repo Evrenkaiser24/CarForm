@@ -228,7 +228,7 @@ window.exportToPDF = async function() {
     const rows = table.getElementsByTagName('tr');
     
     for (const row of rows) {
-        if (row.style.display !== 'none') { // Solo incluir filas visibles (si hay filtro)
+        if (row.style.display !== 'none') { 
             const cells = row.getElementsByTagName('td');
             tableBody.push([
                 cells[0].textContent, // Marca
@@ -242,7 +242,6 @@ window.exportToPDF = async function() {
         }
     }
 
-    // Generar tabla
     doc.autoTable({
         startY: 100,
         head: [['Marca', 'Modelo', 'Año', 'Color', 'Costo', 'Motor', 'Puertas']],
@@ -265,7 +264,6 @@ window.exportToPDF = async function() {
         }
     });
 
-    // Pie de página
     const pageCount = doc.internal.getNumberOfPages();
     doc.setFontSize(8);
     for (let i = 1; i <= pageCount; i++) {
@@ -284,8 +282,7 @@ window.exportToPDF = async function() {
         );
     }
 
-    // Guardar el PDF
-    doc.save('Registro_Automoviles_COBIMSA.pdf');
+    doc.save('Registro_Automoviles.pdf');
 }
 
 // wire search input (live filtering) and initial load
