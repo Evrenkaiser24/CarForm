@@ -155,25 +155,47 @@ document.getElementById('carForm').addEventListener('submit', async (e) => {
 });
 
 // Función para exportar a PDF con formato ejecutivo
-window.exportToPDF = function() {
+window.exportToPDF = async function() {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
     // Configuración de la empresa
     const companyInfo = {
-        name: "COBIMSA",
+        name: "NOMBRE DE LA EMPRESA",
         address: "Av. Principal #123",
-        city: "Ciudad de México",
-        phone: "(55) 1234-5678",
+        city: "Ciudad de Chihuahua",
+        phone: "(+52) 614-123-4567",
         email: "contacto@cobimsa.com",
-        rfc: "COBI123456ABC",
-        logo: null // Aquí podrías agregar un logo si lo tienes
+        rfc: "ABCD123456ABC"
     };
+
+    // Cargar y agregar el logo
+    try {
+        const img = new Image();
+        img.src = '/static/img/logo.svg';
+        await new Promise((resolve, reject) => {
+            img.onload = () => {
+                // Convertir SVG a canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = 40;
+                canvas.height = 40;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, 40, 40);
+                
+                // Agregar imagen al PDF
+                doc.addImage(canvas.toDataURL(), 'PNG', 85, 10, 40, 40);
+                resolve();
+            };
+            img.onerror = reject;
+        });
+    } catch (error) {
+        console.error('Error loading logo:', error);
+    }
 
     // Configurar estilos
     doc.setFontSize(20);
     doc.setTextColor(44, 62, 80);
-    doc.text(companyInfo.name, 105, 20, { align: "center" });
+    doc.text(companyInfo.name, 105, 60, { align: "center" });
 
     // Información de la empresa
     doc.setFontSize(10);
@@ -184,12 +206,12 @@ window.exportToPDF = function() {
         `Tel: ${companyInfo.phone}`,
         `Email: ${companyInfo.email}`,
         `RFC: ${companyInfo.rfc}`
-    ], 105, 30, { align: "center" });
+    ], 105, 70, { align: "center" });
 
     // Título del reporte
     doc.setFontSize(16);
     doc.setTextColor(44, 62, 80);
-    doc.text("Registro de Automóviles", 105, 60, { align: "center" });
+    doc.text("Registro de Automóviles", 105, 90, { align: "center" });
 
     // Fecha del reporte
     const today = new Date().toLocaleDateString('es-MX', { 
@@ -222,7 +244,7 @@ window.exportToPDF = function() {
 
     // Generar tabla
     doc.autoTable({
-        startY: 80,
+        startY: 100,
         head: [['Marca', 'Modelo', 'Año', 'Color', 'Costo', 'Motor', 'Puertas']],
         body: tableBody,
         theme: 'grid',

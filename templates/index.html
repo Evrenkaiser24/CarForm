@@ -112,9 +112,6 @@
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
     <!-- SheetJS for Excel export -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-    <!-- jsPDF and autoTable for PDF export -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <script>
     (function () {
       'use strict'
@@ -128,78 +125,36 @@
       }, false)
     })()
     </script>
-        <script>
-        function decorateActionButtons() {
-            document.querySelectorAll('#carsTableBody button').forEach(btn => {
-                if (btn.dataset.decorated) return;
-                if (btn.classList.contains('btn-warning')) {
-                    btn.innerHTML = '<i class="bi bi-pencil me-1"></i>Editar';
-                    btn.dataset.decorated = '1';
-                } else if (btn.classList.contains('btn-danger')) {
-                    btn.innerHTML = '<i class="bi bi-trash me-1"></i>Eliminar';
-                    btn.dataset.decorated = '1';
-                }
-            });
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const exportExcelBtn = document.getElementById('exportExcelBtn');
+        const exportPdfBtn = document.getElementById('exportPdfBtn');
+        
+        if (exportExcelBtn) exportExcelBtn.addEventListener('click', exportToExcel);
+        if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPDF);
+        
+        const submitBtn = document.getElementById('submitBtn');
+        if (submitBtn && !submitBtn.querySelector('.bi')) {
+            submitBtn.innerHTML = '<i class="bi bi-save me-2"></i>' + submitBtn.textContent.trim();
         }
+    });
 
-        document.addEventListener('DOMContentLoaded', () => {
-            decorateActionButtons();
-            const tbody = document.getElementById('carsTableBody');
-            if (tbody) {
-                const mo = new MutationObserver(() => decorateActionButtons());
-                mo.observe(tbody, { childList: true, subtree: true });
-            }
-                const exportExcelBtn = document.getElementById('exportExcelBtn');
-                const exportPdfBtn = document.getElementById('exportPdfBtn');
-                if (exportExcelBtn) exportExcelBtn.addEventListener('click', exportToExcel);
-                if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPDF);
-            const submitBtn = document.getElementById('submitBtn');
-            const obsSubmit = new MutationObserver(() => {
-                if (submitBtn.innerText.trim().toLowerCase().includes('guardar')) {
-                    if (!submitBtn.querySelector('.bi')) submitBtn.innerHTML = '<i class="bi bi-save me-2"></i>' + submitBtn.textContent.trim();
-                } else {
-                    if (!submitBtn.querySelector('.bi')) submitBtn.innerHTML = '<i class="bi bi-save me-2"></i>' + submitBtn.textContent.trim();
-                }
-            });
-            if (submitBtn) obsSubmit.observe(submitBtn, { childList: true, subtree: true, characterData: true });
+    function exportToExcel() {
+        const table = document.getElementById('carsTable');
+        const wb = XLSX.utils.book_new();
+        const ws_data = [];
+        const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.innerText.trim());
+        ws_data.push(headers.filter(h => h.toLowerCase() !== 'acciones'));
+        const rows = table.querySelectorAll('tbody tr');
+        rows.forEach(tr => {
+            const cells = Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
+            cells.pop();
+            ws_data.push(cells);
         });
-        </script>
-            <script>
-            // Funcion para exportar la tabla a excel
-            function exportToExcel() {
-                const table = document.getElementById('carsTable');
-                const wb = XLSX.utils.book_new();
-                const ws_data = [];
-                const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.innerText.trim());
-                ws_data.push(headers.filter(h => h.toLowerCase() !== 'acciones'));
-                const rows = table.querySelectorAll('tbody tr');
-                rows.forEach(tr => {
-                    const cells = Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
-                    cells.pop();
-                    ws_data.push(cells);
-                });
-                const ws = XLSX.utils.aoa_to_sheet(ws_data);
-                XLSX.utils.book_append_sheet(wb, ws, 'Autos');
-                XLSX.writeFile(wb, 'autos_export.xlsx');
-            }
-
-            // Funcion para exportar la tabla a pdf
-            function exportToPDF() {
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                const table = document.getElementById('carsTable');
-                const headers = Array.from(table.querySelectorAll('thead th')).map(th => th.innerText.trim());
-                const headerFiltered = headers.filter(h => h.toLowerCase() !== 'acciones');
-                const body = [];
-                const rows = table.querySelectorAll('tbody tr');
-                rows.forEach(tr => {
-                    const cells = Array.from(tr.querySelectorAll('td')).map(td => td.innerText.trim());
-                    cells.pop();
-                    body.push(cells);
-                });
-                doc.autoTable({ head: [headerFiltered], body: body, startY: 10 });
-                doc.save('autos_export.pdf');
-            }
-            </script>
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        XLSX.utils.book_append_sheet(wb, ws, 'Autos');
+        XLSX.writeFile(wb, 'autos_export.xlsx');
+    }
+    </script>
 </body>
 </html>
