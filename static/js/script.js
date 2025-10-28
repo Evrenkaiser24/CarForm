@@ -26,6 +26,7 @@ function filterTable(query) {
         }
     });
 }
+
 // funcion para cargar los autos desde la API
 async function loadCars() {
     try {
@@ -52,8 +53,17 @@ function displayCars(cars) {
             <td>${car.engine}</td>
             <td>${car.doors}</td>
             <td>
-                <button type="button" class="btn btn-warning btn-sm me-2" onclick="editCar('${car._id}')" aria-label="Editar ${car.make} ${car.model}"><i class="bi bi-pencil me-1"></i>Editar</button><br>
-                <button type="button" class="btn btn-danger btn-sm" onclick="deleteCar('${car._id}')" aria-label="Eliminar ${car.make} ${car.model}"><i class="bi bi-trash me-1"></i>Eliminar</button>
+                <div class="d-flex flex-column gap-2">
+                    <button type="button" class="btn btn-warning btn-sm" onclick="editCar('${car._id}')" aria-label="Editar ${car.make} ${car.model}">
+                        <i class="bi bi-pencil me-1"></i>Editar
+                    </button>
+                    <button type="button" class="btn btn-primary btn-sm" onclick="openNotes('${car._id}')" aria-label="Notas de ${car.make} ${car.model}">
+                        <i class="bi bi-journal-text me-1"></i>Notas
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="deleteCar('${car._id}')" aria-label="Eliminar ${car.make} ${car.model}">
+                        <i class="bi bi-trash me-1"></i>Eliminar
+                    </button>
+                </div>
             </td>
         `;
         tableBody.appendChild(row);
@@ -80,6 +90,157 @@ window.editCar = function(id) {
             btn.classList.remove('btn-primary');
             btn.classList.add('btn-warning');
         });
+}
+
+window.deleteCar = function(id) {
+    if (confirm('¿Seguro que deseas eliminar este registro?')) {
+        fetch(`/api/cars/${id}`, { method: 'DELETE' })
+            .then(res => res.json())
+            .then(() => {
+                loadCars();
+                if (editingCarId === id) resetForm();
+            });
+    }
+}
+
+function resetForm() {
+    document.getElementById('carForm').reset();
+    editingCarId = null;
+    const btn = document.getElementById('submitBtn');
+    btn.textContent = 'Registrar vehículo';
+    btn.classList.remove('btn-warning');
+    btn.classList.add('btn-primary');
+}
+
+document.getElementById('carForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        return;
+    }
+    const formData = {
+        make: document.getElementById('make').value,
+        model: document.getElementById('model').value,
+        year: parseInt(document.getElementById('year').value),
+        color: document.getElementById('color').value,
+        cost: parseFloat(document.getElementById('cost').value),
+        engine: document.getElementById('engine').value,
+        doors: parseInt(document.getElementById('doors').value)
+    };
+    try {
+        let response;
+        if (editingCarId) {
+            response = await fetch(`/api/cars/${editingCarId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+        } else {
+            response = await fetch('/api/cars', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            });
+        }
+        if (response.ok) {
+            resetForm();
+            loadCars();
+        } else console.error('Error saving car');
+    } catch (error) {
+        console.error('Error:', error);
+    }
+});
+
+// --- Notas (comentarios) por automóvil ---
+let currentCarId = null;
+
+function getNotesModalInstance() {
+    const modalEl = document.getElementById('notesModal');
+    if (!modalEl) return null;
+    return bootstrap.Modal.getOrCreateInstance(modalEl);
+}
+
+window.openNotes = function(carId) {
+    currentCarId = carId;
+    loadNotes();
+    const modal = getNotesModalInstance();
+    if (modal) modal.show();
+}
+
+async function loadNotes() {
+    if (!currentCarId) return;
+    try {
+        const res = await fetch('/api/cars/' + currentCarId + '/notes');
+        if (!res.ok) throw new Error('Error cargando notas');
+        const notes = await res.json();
+        displayNotes(notes);
+    } catch (err) {
+        console.error(err);
+        const container = document.querySelector('.notes-list');
+        if (container) container.innerHTML = '<p class="text-danger">Error al cargar notas.</p>';
+    }
+}
+
+function displayNotes(notes) {
+    const container = document.querySelector('.notes-list');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!notes || notes.length === 0) {
+        container.innerHTML = '<p class="text-muted">No hay notas para este vehículo.</p>';
+        return;
+    }
+    notes.forEach(note => {
+        const div = document.createElement('div');
+        div.className = 'note-item border-bottom pb-2 mb-2';
+        div.innerHTML = '\n            <div class="d-flex justify-content-between align-items-start">\n                <div class="me-2">\n                    <p class="mb-1">' + escapeHtml(note.text) + '</p>\n                    <small class="text-muted">' + (note.date || '') + '</small>\n                </div>\n                <div>\n                    <button class="btn btn-outline-danger btn-sm" onclick="deleteNote(\'' + note._id + '\')" aria-label="Eliminar nota">\n                        <i class="bi bi-trash"></i>\n                    </button>\n                </div>\n            </div>\n        ';
+        container.appendChild(div);
+    });
+}
+
+function escapeHtml(text) {
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+window.addNote = async function() {
+    const ta = document.getElementById('noteText');
+    if (!ta) return;
+    const text = ta.value.trim();
+    if (!text) return;
+    try {
+        const res = await fetch('/api/cars/' + currentCarId + '/notes', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text, date: new Date().toLocaleString('es-MX') })
+        });
+        if (!res.ok) throw new Error('Error agregando nota');
+        ta.value = '';
+        await loadNotes();
+    } catch (err) {
+        console.error(err);
+        alert('No se pudo agregar la nota.');
+    }
+}
+
+window.deleteNote = async function(noteId) {
+    if (!confirm('¿Eliminar esta nota?')) return;
+    try {
+        console.log('Eliminando nota:', noteId, 'del carro:', currentCarId);
+        const res = await fetch('/api/cars/' + currentCarId + '/notes/' + noteId, { method: 'DELETE' });
+        if (!res.ok) {
+            const errorData = await res.json();
+            throw new Error('Error eliminando nota: ' + (errorData.error || ''));
+        }
+        await loadNotes();
+    } catch (err) {
+        console.error('Error completo:', err);
+        alert('No se pudo eliminar la nota.');
+    }
 }
 
 window.deleteCar = function(id) {

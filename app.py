@@ -86,6 +86,53 @@ def api_update_car(car_id):
     except Exception:
         return jsonify({'error': 'Invalid ID'}), 400
 
+@app.route('/api/cars/<car_id>/notes', methods=['GET'])
+def get_car_notes(car_id):
+    try:
+        car = cars.find_one({'_id': ObjectId(car_id)})
+        if not car:
+            return jsonify({'error': 'Car not found'}), 404
+        notes = car.get('notes', [])
+        return jsonify(notes)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/cars/<car_id>/notes', methods=['POST'])
+def add_car_note(car_id):
+    try:
+        note = request.json
+        if not note or 'text' not in note:
+            return jsonify({'error': 'Note text is required'}), 400
+        
+        result = cars.update_one(
+            {'_id': ObjectId(car_id)},
+            {'$push': {'notes': {
+                '_id': str(ObjectId()),
+                'text': note['text'],
+                'date': note.get('date', '')
+            }}}
+        )
+        
+        if result.matched_count:
+            return jsonify({'message': 'Note added successfully'})
+        return jsonify({'error': 'Car not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/cars/<car_id>/notes/<note_id>', methods=['DELETE'])
+def delete_car_note(car_id, note_id):
+    try:
+        result = cars.update_one(
+            {'_id': ObjectId(car_id)},
+            {'$pull': {'notes': {'_id': note_id}}}
+        )
+        
+        if result.matched_count:
+            return jsonify({'message': 'Note deleted successfully'})
+        return jsonify({'error': 'Car or note not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
